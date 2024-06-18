@@ -1,0 +1,62 @@
+services:
+
+  docker-fe:
+    build: docker-build/fe
+    container_name: "doris-fe"
+    hostname: "fe"
+    restart: on-failure
+    environment:
+      - FE_SERVERS=fe1:172.20.80.2:9010
+      - FE_ID=1
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+    depends_on:
+      - fixsysctl
+    volumes:
+      - ./data/fe/doris-meta:/opt/apache-doris/fe/doris-meta
+      - ./data/fe/conf:/opt/apache-doris/fe/conf
+      - ./data/fe/log:/opt/apache-doris/fe/log
+    networks:
+      doris_net:
+        ipv4_address: 172.20.80.2
+
+  docker-be:
+    build: docker-build/be
+    container_name: "doris-be"
+    hostname: "be"
+    depends_on:
+      - docker-fe
+    environment:
+      - FE_SERVERS=fe1:172.20.80.2:9010
+      - BE_ADDR=172.20.80.3:9050
+    ports:
+      - "8040:8040"
+    volumes:
+      - ./data/be/storage:/opt/apache-doris/be/storage
+      - ./data/be/conf:/opt/apache-doris/be/conf
+      - ./data/be/script:/docker-entrypoint-initdb.d
+      - ./data/be/log:/opt/apache-doris/be/log
+    networks:
+      doris_net:
+        ipv4_address: 172.20.80.3
+#    mem_swappiness: 0
+#    memswap_limit: 2g
+#    mem_limit: 2g
+
+  fixsysctl:
+    restart: "no"
+    privileged: true
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 25m
+    image: centos:7
+    command: "sysctl -w vm.max_map_count=2000000"
+
+networks:
+  doris_net:
+    ipam:
+      config:
+        - subnet: 172.20.80.0/24
