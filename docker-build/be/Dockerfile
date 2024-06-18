@@ -1,8 +1,7 @@
-# Choose a base image
-FROM openjdk:8u342-jdk
+FROM openjdk:17-jdk-slim
 
 # Set environment variables
-ENV JAVA_HOME="/usr/local/openjdk-8/"
+ENV JAVA_HOME="/usr/local/openjdk-17/"
 ENV PATH="/opt/apache-doris/be/bin:$PATH"
 
 # Download the software into the Docker image
@@ -12,10 +11,11 @@ RUN mkdir /opt/apache-doris && \
 
 WORKDIR /opt/apache-doris/be
 
+COPY ./resource/start_be.sh /opt/apache-doris/be/bin/start_be.sh
+#COPY ./resource/be.conf /opt/apache-doris/be/conf/be.conf
+
 RUN apt-get update && \
     apt-get install -y default-mysql-client && \
     apt-get clean
-
-RUN swapoff -a
 
 ENTRYPOINT ["/opt/apache-doris/be/bin/start_be.sh"]
